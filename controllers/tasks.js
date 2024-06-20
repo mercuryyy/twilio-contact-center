@@ -95,11 +95,9 @@ module.exports.createVideo = async (req, res) => {
   }
 };
 
-const TaskRouter = require('twilio').twiml.TaskRouter; // import TaskRouter from Twilio SDK
-
 module.exports.getPendingTasks = async (req, res) => {
     try {
-        const tasks = await TaskRouter.taskqueues(req.body.workspaceSid)
+        const tasks = await taskrouterHelper.taskqueues(req.body.workspaceSid)
             .tasks
             .list({ assignmentStatus: 'pending', limit: 20 });
 
