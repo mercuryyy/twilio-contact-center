@@ -94,3 +94,17 @@ module.exports.createVideo = async (req, res) => {
     res.status(500).json(res.convertErrorToJSON(error));
   }
 };
+
+const TaskRouter = require('twilio').twiml.TaskRouter; // import TaskRouter from Twilio SDK
+
+module.exports.getPendingTasks = async (req, res) => {
+    try {
+        const tasks = await TaskRouter.taskqueues(req.body.workspaceSid)
+            .tasks
+            .list({ assignmentStatus: 'pending', limit: 20 });
+
+        res.status(200).json(tasks);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
