@@ -34,28 +34,34 @@ module.exports.getConference = function (req, res) {
 		})
 }
 
-module.exports.call = function (req, res) {
-	let name = 'conf_' + req.body.CallSid
 
-	const twiml = new twilio.twiml.VoiceResponse()
-	const dial = twiml.dial({ callerId: req.configuration.twilio.callerId })
+module.exports.call = async function (req, res) {
+  let name = 'conf_' + req.body.CallSid;
 
-	dial.conference(
-		{
-			endConferenceOnExit: true,
-			statusCallbackEvent: 'join',
-			statusCallback: `/api/phone/call/${req.body.CallSid}/add-participant/${encodeURIComponent(req.body.phone)}`
-		},
-		name
-	)
+  const twiml = new twilio.twiml.VoiceResponse();
+  const start = twiml.start();
+  start.stream({ url: 'wss://voicenology.increzon.com/transcribe/', track: 'both_tracks'});
 
-	res.set({
-		'Content-Type': 'application/xml',
-		'Cache-Control': 'public, max-age=0',
-	})
+  // const dial = twiml.dial({ callerId: req.configuration.twilio.callerId });
+  const dial = twiml.dial({ callerId: await getCallerId(req.body.phone) });
+	console.log(callerId);
+  dial.conference(
+    {
+      endConferenceOnExit: true,
+      statusCallbackEvent: 'join',
+      statusCallback: `/api/phone/call/${req.body.CallSid}/add-participant/${encodeURIComponent(req.body.phone)}`
+    },
+    name
+  );
 
-	res.send(twiml.toString())
+  res.set({
+    'Content-Type': 'application/xml',
+    'Cache-Control': 'public, max-age=0',
+  });
+  // console.log(twiml.toString());
+  res.send(twiml.toString());
 }
+
 
 module.exports.addParticipant = function (req, res) {
 
@@ -95,4 +101,21 @@ module.exports.hold = function (req, res) {
 			res.status(500).end()
 		})
 
+}
+
+async function getCallerId(targetNumber) {
+    try {
+        const availableNumbers = await client.incomingPhoneNumbers.list();
+        return selectTwilioNumber(availableNumbers, targetNumber);
+    } catch (error) {
+        console.error('Error fetching available Twilio numbers:', error);
+        throw error;
+    }
+}
+
+// Function to select a Twilio number based on geo-location of the target number
+function selectTwilioNumber(numbers, targetNumber) {
+    // Implement your logic to select the best number based on geo-location of the targetNumber
+    // For simplicity, let's assume we select the first number
+    return numbers[1].phoneNumber;
 }
